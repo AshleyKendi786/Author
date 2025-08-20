@@ -1,19 +1,13 @@
-# magazine_demo.py
-
-class Article:
-    def __init__(self, author, magazine, title):
-        self.author = author
-        self.magazine = magazine
-        self.title = title
 
 
 class Author:
-    _all_authors = []
-
     def __init__(self, name):
-        self.name = name  # ✅ Use setter for validation
+        if not isinstance(name, str):
+            raise Exception("Name must be a string")
+        if len(name) == 0:
+            raise Exception("Name cannot be empty")
+        self._name = name
         self._articles = []
-        Author._all_authors.append(self)
 
     @property
     def name(self):
@@ -21,47 +15,25 @@ class Author:
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Name must be a string")
-        if len(value.strip()) == 0:
-            raise ValueError("Name must be longer than 0 characters")
-        if hasattr(self, "_name"):  # prevents reassignment
-            raise AttributeError("Name cannot be changed after instantiation")
-        self._name = value
+        raise Exception("Author name is immutable")
 
-    @property
     def articles(self):
         return self._articles
 
-    @property
     def magazines(self):
-        return list(set(article.magazine for article in self._articles))
-
-    def add_article(self, magazine, title):
-        article = Article(self, magazine, title)
-        self._articles.append(article)
-        magazine._articles.append(article)
-        return article
-
-    @property
-    def topic_areas(self):
-        if not self._articles:
-            return None
-        return list(set(article.magazine.category for article in self._articles))
-
-    @classmethod
-    def all(cls):
-        return cls._all_authors
+        
+        return list({article.magazine for article in self._articles})
 
 
 class Magazine:
-    _all_magazines = []
-
     def __init__(self, name, category):
-        self.name = name
-        self.category = category
+        if not isinstance(name, str) or not (2 <= len(name) <= 16):
+            raise Exception("Name must be 2–16 characters")
+        if not isinstance(category, str) or len(category) < 1:
+            raise Exception("Category must be a non-empty string")
+        self._name = name
+        self._category = category
         self._articles = []
-        Magazine._all_magazines.append(self)
 
     @property
     def name(self):
@@ -69,10 +41,8 @@ class Magazine:
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Name must be a string")
-        if len(value) < 2 or len(value) > 16:
-            raise ValueError("Name must be between 2 and 16 characters")
+        if not isinstance(value, str) or not (2 <= len(value) <= 16):
+            raise Exception("Name must be 2–16 characters")
         self._name = value
 
     @property
@@ -81,87 +51,83 @@ class Magazine:
 
     @category.setter
     def category(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Category must be a string")
-        if len(value.strip()) == 0:
-            raise ValueError("Category must be longer than 0 characters")
+        if not isinstance(value, str) or len(value) < 1:
+            raise Exception("Category must be a non-empty string")
         self._category = value
 
-    @property
     def articles(self):
         return self._articles
 
-    @property
     def contributors(self):
-        return list(set(article.author for article in self._articles))
+        return list({article.author for article in self._articles})
 
-    @property
     def article_titles(self):
-        if not self._articles:
-            return None
         return [article.title for article in self._articles]
 
-    @property
     def contributing_authors(self):
-        author_counts = {}
+        # authors who wrote more than 2 articles
+        authors = {}
         for article in self._articles:
-            author = article.author
-            author_counts[author] = author_counts.get(author, 0) + 1
-
-        contributing_authors = [author for author, count in author_counts.items() if count >= 2]
-        return contributing_authors if contributing_authors else None
-
-    @classmethod
-    def top_publisher(cls):
-        magazines_with_articles = [mag for mag in cls._all_magazines if mag.articles]
-        if not magazines_with_articles:
-            return None
-        return max(magazines_with_articles, key=lambda mag: len(mag.articles))
-
-    @classmethod
-    def all(cls):
-        return cls._all_magazines
+            authors[article.author] = authors.get(article.author, 0) + 1
+        return [author for author, count in authors.items() if count > 2]
 
 
-# ---------------- DEMO / TEST ----------------
+class Article:
+    def __init__(self, author, magazine, title):
+        if not isinstance(author, Author):
+            raise Exception("Author must be of type Author")
+        if not isinstance(magazine, Magazine):
+            raise Exception("Magazine must be of type Magazine")
+        if not isinstance(title, str):
+            raise Exception("Title must be a string")
+        if not (5 <= len(title) <= 50):
+            raise Exception("Title must be 5–50 characters")
+
+        self._author = author
+        self._magazine = magazine
+        self._title = title
+
+        #relationships
+        author._articles.append(self)
+        magazine._articles.append(self)
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        raise Exception("Title is immutable")
+
+    @property
+    def author(self):
+        return self._author
+
+    @property
+    def magazine(self):
+        return self._magazine
 
 if __name__ == "__main__":
-    # Create Authors
+    # Authors
     a1 = Author("Ashley")
-    a2 = Author("Kim")
-    a3 = Author("Sylvia")
+    a2 = Author("Sylvia")
 
-    # Create Magazines
-    m1 = Magazine("Vogue", "Fashion")
-    m2 = Magazine("TechLife", "Technology")
-    m3 = Magazine("DanceBeat", "Entertainment")
+    # Magazines
+    m1 = Magazine("TechWorld", "Fashion")
+    m2 = Magazine("HealthPlus", "Beauty")
 
-    # Add Articles
-    a1.add_article(m1, "Runway Revolution")
-    a1.add_article(m1, "Streetwear Rising")
-    a1.add_article(m2, "AI in Fashion")
+    # Articles
+    Article(a1, m1, "AI Revolution in 2025")
+    Article(a1, m1, "Python Tips and Tricks")
+    Article(a2, m2, "Healthy Living Guide")
+    Article(a2, m1, "Dance Studios in Campus")
+    Article(a2, m1, "Fashion Trends 2023")
 
-    a2.add_article(m2, "The Future of Robotics")
-    a2.add_article(m2, "Tech & Humanity")
-    a2.add_article(m3, "Dancehall Explosion")
 
-    a3.add_article(m1, "African Designers to Watch")
-    a3.add_article(m3, "Campus Dance Trends")
-
-    # --- TEST OUTPUTS ---
-    print("All Authors:", [author.name for author in Author.all()])
-    print("All Magazines:", [mag.name for mag in Magazine.all()])
-
-    print("\nArticles by Ashley:", [article.title for article in a1.articles])
-    print("Magazines Ashley has written for:", [mag.name for mag in a1.magazines])
-
-    print("\nArticles in Vogue:", [article.title for article in m1.articles])
-    print("Contributors to Vogue:", [author.name for author in m1.contributors])
-
-    print("\nTopic areas Ashley covers:", a1.topic_areas)
-    print("Titles in TechLife:", m2.article_titles)
-    print("Contributing authors in TechLife (2+ articles):",
-          [a.name for a in m2.contributing_authors or []])
-
-    top = Magazine.top_publisher()
-    print("\nTop Publisher:", top.name if top else None)
+    print("\n--- Demo ---")
+    print("Kendi's Articles:", [art.title for art in a1.articles()])
+    print("Kendi's Magazines:", [mag.name for mag in a1.magazines()])
+    print("Contributors to TechWorld:", [auth.name for auth in m1.contributors()])
+    print("Articles in TechWorld:", m1.article_titles())
+    print("Contributing Authors (2+ articles in TechWorld):",
+          [auth.name for auth in m1.contributing_authors()])
